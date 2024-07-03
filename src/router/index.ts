@@ -1,313 +1,223 @@
-import { type RouteRecordRaw, createRouter } from "vue-router"
-import { history, flatMultiLevelRoutes } from "./helper"
-import routeSettings from "@/config/route"
+import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router'
+import { AppRouteRecordRaw } from './types'
+import useStore from '@/store'
 
-const Layouts = () => import("@/layouts/index.vue")
+export const Layout = () => import('@/layout/index.vue')
 
-/**
- * 常驻路由
- * 除了 redirect/403/404/login 等隐藏页面，其他页面建议设置 Name 属性
- */
-export const constantRoutes: RouteRecordRaw[] = [
-  {
-    path: "/redirect",
-    component: Layouts,
-    meta: {
-      hidden: true
-    },
-    children: [
-      {
-        path: ":path(.*)",
-        component: () => import("@/views/redirect/index.vue")
-      }
-    ]
-  },
-  {
-    path: "/403",
-    component: () => import("@/views/error-page/403.vue"),
-    meta: {
-      hidden: true
-    }
-  },
-  {
-    path: "/404",
-    component: () => import("@/views/error-page/404.vue"),
-    meta: {
-      hidden: true
-    },
-    alias: "/:pathMatch(.*)*"
-  },
-  {
-    path: "/login",
-    component: () => import("@/views/login/index.vue"),
-    meta: {
-      hidden: true
-    }
-  },
-  {
-    path: "/",
-    component: Layouts,
-    redirect: "/dashboard",
-    children: [
-      {
-        path: "dashboard",
-        component: () => import("@/views/dashboard/index.vue"),
-        name: "Dashboard",
-        meta: {
-          title: "首页",
-          svgIcon: "dashboard",
-          affix: true
-        }
-      }
-    ]
-  },
-  {
-    path: "/unocss",
-    component: Layouts,
-    redirect: "/unocss/index",
-    children: [
-      {
-        path: "index",
-        component: () => import("@/views/unocss/index.vue"),
-        name: "UnoCSS",
-        meta: {
-          title: "UnoCSS",
-          svgIcon: "unocss"
-        }
-      }
-    ]
-  },
-  {
-    path: "/link",
-    meta: {
-      title: "外链",
-      svgIcon: "link"
-    },
-    children: [
-      {
-        path: "https://juejin.cn/post/7089377403717287972",
-        component: () => {},
-        name: "Link1",
-        meta: {
-          title: "中文文档"
-        }
-      },
-      {
-        path: "https://juejin.cn/column/7207659644487139387",
-        component: () => {},
-        name: "Link2",
-        meta: {
-          title: "新手教程"
-        }
-      }
-    ]
-  },
-  {
-    path: "/table",
-    component: Layouts,
-    redirect: "/table/element-plus",
-    name: "Table",
-    meta: {
-      title: "表格",
-      elIcon: "Grid"
-    },
-    children: [
-      {
-        path: "element-plus",
-        component: () => import("@/views/table/element-plus/index.vue"),
-        name: "ElementPlus",
-        meta: {
-          title: "Element Plus",
-          keepAlive: true
-        }
-      },
-      {
-        path: "vxe-table",
-        component: () => import("@/views/table/vxe-table/index.vue"),
-        name: "VxeTable",
-        meta: {
-          title: "Vxe Table",
-          keepAlive: true
-        }
-      }
-    ]
-  },
-  {
-    path: "/menu",
-    component: Layouts,
-    redirect: "/menu/menu1",
-    name: "Menu",
-    meta: {
-      title: "多级路由",
-      svgIcon: "menu"
-    },
-    children: [
-      {
-        path: "menu1",
-        component: () => import("@/views/menu/menu1/index.vue"),
-        redirect: "/menu/menu1/menu1-1",
-        name: "Menu1",
-        meta: {
-          title: "menu1"
-        },
-        children: [
-          {
-            path: "menu1-1",
-            component: () => import("@/views/menu/menu1/menu1-1/index.vue"),
-            name: "Menu1-1",
-            meta: {
-              title: "menu1-1",
-              keepAlive: true
-            }
-          },
-          {
-            path: "menu1-2",
-            component: () => import("@/views/menu/menu1/menu1-2/index.vue"),
-            redirect: "/menu/menu1/menu1-2/menu1-2-1",
-            name: "Menu1-2",
-            meta: {
-              title: "menu1-2"
-            },
-            children: [
-              {
-                path: "menu1-2-1",
-                component: () => import("@/views/menu/menu1/menu1-2/menu1-2-1/index.vue"),
-                name: "Menu1-2-1",
-                meta: {
-                  title: "menu1-2-1",
-                  keepAlive: true
-                }
-              },
-              {
-                path: "menu1-2-2",
-                component: () => import("@/views/menu/menu1/menu1-2/menu1-2-2/index.vue"),
-                name: "Menu1-2-2",
-                meta: {
-                  title: "menu1-2-2",
-                  keepAlive: true
-                }
-              }
-            ]
-          },
-          {
-            path: "menu1-3",
-            component: () => import("@/views/menu/menu1/menu1-3/index.vue"),
-            name: "Menu1-3",
-            meta: {
-              title: "menu1-3",
-              keepAlive: true
-            }
-          }
-        ]
-      },
-      {
-        path: "menu2",
-        component: () => import("@/views/menu/menu2/index.vue"),
-        name: "Menu2",
-        meta: {
-          title: "menu2",
-          keepAlive: true
-        }
-      }
-    ]
-  },
-  {
-    path: "/hook-demo",
-    component: Layouts,
-    redirect: "/hook-demo/use-fetch-select",
-    name: "HookDemo",
-    meta: {
-      title: "Hook",
-      elIcon: "Menu",
-      alwaysShow: true
-    },
-    children: [
-      {
-        path: "use-fetch-select",
-        component: () => import("@/views/hook-demo/use-fetch-select.vue"),
-        name: "UseFetchSelect",
-        meta: {
-          title: "useFetchSelect"
-        }
-      },
-      {
-        path: "use-fullscreen-loading",
-        component: () => import("@/views/hook-demo/use-fullscreen-loading.vue"),
-        name: "UseFullscreenLoading",
-        meta: {
-          title: "useFullscreenLoading"
-        }
-      },
-      {
-        path: "use-watermark",
-        component: () => import("@/views/hook-demo/use-watermark.vue"),
-        name: "UseWatermark",
-        meta: {
-          title: "useWatermark"
-        }
-      }
-    ]
-  }
+// 参数说明: https://panjiachen.github.io/vue-element-admin-site/guide/essentials/router-and-nav.html
+// 静态路由
+export const constantRoutes: Array<AppRouteRecordRaw> = [
+	{
+		path: '/redirect',
+		component: Layout,
+		meta: { hidden: true },
+		children: [
+			{
+				path: '/redirect/:path(.*)',
+				component: () => import('@/views/redirect/index.vue')
+			}
+		]
+	},
+	{
+		path: '/login',
+		component: () => import('@/views/login/index.vue'),
+		meta: { hidden: true }
+	},
+	{
+		path: '/404',
+		component: () => import('@/views/error-page/404.vue'),
+		meta: { hidden: true }
+	},
+	{
+		path: '/401',
+		component: () => import('@/views/error-page/401.vue'),
+		meta: { hidden: true }
+	},
+	{
+		path: '/',
+		component: Layout,
+		redirect: '/dashboard',
+		children: [
+			{
+				path: 'dashboard',
+				component: () => import('@/views/dashboard/index.vue'),
+				name: 'dashboard',
+				meta: { title: 'dashboard', icon: 'homepage', affix: true }
+			}
+		]
+	},
+	{
+		path: '/components',
+		component: Layout,
+		redirect: '/index',
+		children: [
+			{
+				path: 'index',
+				component: () => import('@/views/components/index.vue'),
+				name: 'comps',
+				meta: { title: 'comps', icon: 'excel' }
+			}
+		]
+	},
+	{
+		path: '/form',
+		component: Layout,
+		// meta: { title: 'Form', icon: 'guide' },
+		redirect: '/default',
+		children: [
+			{
+				path: 'default',
+				component: () => import('@/views/form/default.vue'),
+				name: 'FormDefault',
+				meta: { title: 'form', icon: 'guide' }
+			}
+		]
+	},
+	{
+		path: '/table',
+		component: Layout,
+		redirect: '/default',
+		meta: { title: 'table', icon: 'table' },
+		children: [
+			{
+				path: 'default',
+				component: () => import('@/views/table/default.vue'),
+				name: 'TableDefault',
+				meta: { title: 'table' /*, icon: 'table'*/ }
+			},
+			{
+				path: 'multipleHeader',
+				component: () => import('@/views/table/multipleHeader.vue'),
+				name: 'multipleHeader',
+				meta: { title: 'multipleHeader' }
+			},
+			{
+				path: 'treeTable',
+				component: () => import('@/views/table/treeTable.vue'),
+				name: 'treeTable',
+				meta: { title: 'treeTable' }
+			},
+			{
+				path: 'mergeCells',
+				component: () => import('@/views/table/mergeCells.vue'),
+				name: 'mergeCells',
+				meta: { title: 'mergeCells' }
+			},
+			{
+				path: 'footerSummary',
+				component: () => import('@/views/table/footerSummary.vue'),
+				name: 'footerSummary',
+				meta: { title: 'footerSummary' }
+			},
+			{
+				path: 'expandTable',
+				component: () => import('@/views/table/expandTable.vue'),
+				name: 'expandTable',
+				meta: { title: 'expandTable' }
+			},
+			{
+				path: 'resizeParentHeightTable',
+				component: () => import('@/views/table/resizeParentHeightTable.vue'),
+				name: 'resizeParentHeightTable',
+				meta: { title: 'resizeParentHeightTable' }
+			}
+		]
+	},
+	/*// 仅用于研发测试 START
+	{
+		path: '/test',
+		component: Layout,
+		// meta: {hidden: true, title: 'test', icon: 'system'},
+		meta: { title: 'test', icon: 'system' },
+		redirect: '/test/testSetup',
+		children: [
+			{
+				path: 'testSetup',
+				component: () => import('@/views/test/testSetup.vue'),
+				name: 'testSetup',
+				meta: { title: 'testSetup' }
+			},
+			{
+				path: 'componentCommunication',
+				component: () => import('@/views/test/componentCommunication/index.vue'),
+				name: 'componentCommunication',
+				meta: { title: '组件通信方式' }
+			}
+		]
+	},
+	// 仅用于研发测试 END*/
+	// 外部链接
+	{
+		path: '/external-link',
+		component: Layout,
+		children: [
+			{
+				path: 'https://github.com/LanceJiang/vue3_element_admin',
+				meta: { title: '外部链接', icon: 'link' }
+			}
+		]
+	}
+]
+
+export const noFoundRouters = [
+	{
+		// redirect: '/404',
+		path: '/:pathMatch(.*)',
+		component: () => import('@/views/error-page/404.vue'),
+		meta: { hidden: true }
+	}
 ]
 
 /**
- * 动态路由
- * 用来放置有权限 (Roles 属性) 的路由
- * 必须带有 Name 属性
+ * devAllRouters: 每次有新的路由配置 请做好标注!!!
+ * 本地 dev 调试 默认使用本地路由数据
+ * (若想要调试 接口数据 请在 env.development.local 修改 VITE_APP_USE_LOCAL_ROUTES 不为 1即可)
  */
-export const dynamicRoutes: RouteRecordRaw[] = [
-  {
-    path: "/permission",
-    component: Layouts,
-    redirect: "/permission/page",
-    name: "Permission",
-    meta: {
-      title: "权限",
-      svgIcon: "lock",
-      roles: ["admin", "editor"], // 可以在根路由中设置角色
-      alwaysShow: true // 将始终显示根菜单
-    },
-    children: [
-      {
-        path: "page",
-        component: () => import("@/views/permission/page.vue"),
-        name: "PagePermission",
-        meta: {
-          title: "页面级",
-          roles: ["admin"] // 或者在子导航中设置角色
-        }
-      },
-      {
-        path: "directive",
-        component: () => import("@/views/permission/directive.vue"),
-        name: "DirectivePermission",
-        meta: {
-          title: "按钮级" // 如果未设置角色，则表示：该页面不需要权限，但会继承根路由的角色
-        }
-      }
-    ]
-  }
+export const devAllRouters: Array<AppRouteRecordRaw> = [
+	{
+		// demo演示
+		path: '/demo',
+		component: 'Layout',
+		redirect: '/demo/adminManage',
+		meta: { title: 'demo', icon: 'peoples' },
+		children: [
+			{
+				path: 'pageConfig',
+				// component: () => import('@/views/demo/pageConfig/index'),
+				component: 'demo/pageConfig/index',
+				name: 'pageConfig',
+				meta: { title: 'demo_pageConfig' }
+			},
+			{
+				// 管理员管理
+				path: 'adminManage',
+				name: 'adminManage',
+				component: 'demo/adminManage/index',
+				meta: { title: 'demo_adminManage' }
+			}
+		]
+	}
+
+	// todo 请添加相关新路由描述
 ]
 
+// 创建路由
 const router = createRouter({
-  history,
-  routes: routeSettings.thirdLevelRouteCache ? flatMultiLevelRoutes(constantRoutes) : constantRoutes
+	history: createWebHashHistory(),
+	routes: constantRoutes.concat(noFoundRouters) as RouteRecordRaw[],
+	// 刷新时，滚动条位置还原
+	scrollBehavior: () => ({ left: 0, top: 0 })
 })
 
-/** 重置路由 */
+// 重置路由
 export function resetRouter() {
-  // 注意：所有动态路由路由必须带有 Name 属性，否则可能会不能完全重置干净
-  try {
-    router.getRoutes().forEach((route) => {
-      const { name, meta } = route
-      if (name && meta.roles?.length) {
-        router.hasRoute(name) && router.removeRoute(name)
-      }
-    })
-  } catch {
-    // 强制刷新浏览器也行，只是交互体验不是很好
-    window.location.reload()
-  }
+	const { permission } = useStore()
+	permission.routes.forEach(route => {
+		const name = route.name
+		if (name && router.hasRoute(name)) {
+			router.removeRoute(name)
+		}
+	})
 }
 
 export default router

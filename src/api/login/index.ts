@@ -1,27 +1,54 @@
-import { request } from "@/utils/service"
-import type * as Login from "./types/login"
+import { GeetConfig, LoginFormData, GoogleLoginData, LoginResponseData } from '@/types'
+import request from '@/utils/request'
+import { AxiosPromise } from 'axios'
 
-/** 获取登录验证码 */
-export function getLoginCodeApi() {
-  return request<Login.LoginCodeResponseData>({
-    url: "login/code",
-    method: "get"
-  })
+/**
+ * 登录
+ * @param data
+ */
+export function login(data: LoginFormData): AxiosPromise<LoginResponseData> {
+	return Promise.resolve({
+		username: 'admin'
+	})
+	// return request({
+	// 	url: '/login',
+	// 	method: 'post',
+	// 	data
+	// })
 }
 
-/** 登录并返回 Token */
-export function loginApi(data: Login.LoginRequestData) {
-  return request<Login.LoginResponseData>({
-    url: "users/login",
-    method: "post",
-    data
-  })
+/**
+ * 谷歌验证
+ * @param data
+ */
+export function googleLogin(data: GoogleLoginData): AxiosPromise {
+	return Promise.resolve({
+		token: 'admin_token'
+	})
+	// return request({
+	// 	url: '/google',
+	// 	method: 'post',
+	// 	data,
+	//   extraConfig: { showFullscreenLoading: true }
+	// })
 }
 
-/** 获取用户详情 */
-export function getUserInfoApi() {
-  return request<Login.UserInfoResponseData>({
-    url: "users/info",
-    method: "get"
-  })
+/**
+ * 注销
+ */
+export function logout() {
+	return request({
+		url: '/登出todo',
+		method: 'delete'
+	})
+}
+
+/**
+ * Geetest配置参数
+ */
+export function getGeetConfig(): AxiosPromise<GeetConfig> {
+	return request({
+		url: `/passport/getgeetestconfig?t=${+new Date()}`,
+		method: 'get'
+	})
 }

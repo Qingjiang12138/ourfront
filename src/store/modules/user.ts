@@ -1,69 +1,123 @@
-import { ref } from "vue"
-import store from "@/store"
-import { defineStore } from "pinia"
-import { useTagsViewStore } from "./tags-view"
-import { useSettingsStore } from "./settings"
-import { getToken, removeToken, setToken } from "@/utils/cache/cookies"
-import { resetRouter } from "@/router"
-import { loginApi, getUserInfoApi } from "@/api/login"
-import { type LoginRequestData } from "@/api/login/types/login"
-import routeSettings from "@/config/route"
+import { defineStore } from 'pinia'
+import { LoginFormData, GoogleLoginData, UserState } from '@/types'
+import { ls } from '@/utils'
+import { login, googleLogin, logout } from '@/api/login'
+import router, { resetRouter } from '@/router'
+// @ts-ignore
+import md5 from 'js-md5'
 
-export const useUserStore = defineStore("user", () => {
-  const token = ref<string>(getToken() || "")
-  const roles = ref<string[]>([])
-  const username = ref<string>("")
+const useUserStore = defineStore({
+	id: 'user',
+	state: (): UserState => ({
+		token: ls.get('token') || '',
+		nickname: '',
+		avatar: '',
+		roles: [],
+		perms: [],
+		loginQuery: {},
+		isLogin: false
+	}),
+	actions: {
+		async RESET_STATE() {
+			this.$reset()
+		},
+		/**
+		 * 用户登录请求
+		 * @param params 登录用户信息
+		 *  username: 用户名
+		 *  password: 密码 -> md5加密
+		 *  challenge: 验证码
+		 */
+		login(params: LoginFormData) {
+			const userInfo = {
+				...params,
+				password: md5(params.password)
+			}
+			return login(userInfo).then(data => {
+				// 登录账号 设置为 nickname
+				this.nickname = params.username
+				return data
+			})
+			// .then((data) => {})
+			//   debugger
+			//   const tmp_token = (data || {}).tmp_token
+			//   ls.set('token', tmp_token)
+			//   this.token = tmp_token
+			// })
+		},
+		/**
+		 * Google验证登录
+		 */
+		googleLogin(params: GoogleLoginData) {
+			return googleLogin(params).then((data: any) => {
+				// console.error(data, 'data')
+				const token = (data || {}).token
+				ls.set('token', token)
+				this.token = token
 
-  const tagsViewStore = useTagsViewStore()
-  const settingsStore = useSettingsStore()
+				// @ts-ignore
+				const { redirect, ...query } = this.loginQuery || {}
+				// debugger
+				const path = redirect || '/'
+				// console.error(path, 'path query', query)
+				// @ts-ignore
+				router.push({ path, query })
+				return data
+			})
+		},
+		/**
+		 *  获取用户信息（昵称、头像、角色集合、权限集合）
+		 */
+		getUserInfo() {
+			return new Promise(resolve => {
+				this.isLogin = true
+				resolve(true)
+			})
+			// return getUserInfo()
+			//   .then(({ data }) => {
+			//     if (!data) {
+			//       return console.error('Verification failed, please Login again.')
+			//     }
+			//     const { nickname, avatar, roles, perms } = data
+			//     if (!roles || roles.length <= 0) {
+			//       console.error('getUserInfo: roles must be a non-null array!')
+			//     }
+			//     this.nickname = nickname
+			//     this.avatar = avatar
+			//     this.roles = roles
+			//     this.perms = perms
+			//   })
+		},
 
-  /** 登录 */
-  const login = async ({ username, password, code }: LoginRequestData) => {
-    const { data } = await loginApi({ username, password, code })
-    setToken(data.token)
-    token.value = data.token
-  }
-  /** 获取用户详情 */
-  const getInfo = async () => {
-    const { data } = await getUserInfoApi()
-    username.value = data.username
-    // 验证返回的 roles 是否为一个非空数组，否则塞入一个没有任何作用的默认角色，防止路由守卫逻辑进入无限循环
-    roles.value = data.roles?.length > 0 ? data.roles : routeSettings.defaultRoles
-  }
-  /** 模拟角色变化 */
-  const changeRoles = async (role: string) => {
-    const newToken = "token-" + role
-    token.value = newToken
-    setToken(newToken)
-    // 用刷新页面代替重新登录
-    window.location.reload()
-  }
-  /** 登出 */
-  const logout = () => {
-    removeToken()
-    token.value = ""
-    roles.value = []
-    resetRouter()
-    _resetTagsView()
-  }
-  /** 重置 Token */
-  const resetToken = () => {
-    removeToken()
-    token.value = ""
-    roles.value = []
-  }
-  /** 重置 Visited Views 和 Cached Views */
-  const _resetTagsView = () => {
-    if (!settingsStore.cacheTagsView) {
-      tagsViewStore.delAllVisitedViews()
-      tagsViewStore.delAllCachedViews()
-    }
-  }
+		/**
+		 *  注销
+		 */
+		logout() {
+			return new Promise(resolve => {
+				ls.remove('token')
+				this.RESET_STATE()
+				resetRouter()
+				return resolve(true)
+			})
+			// return logout()
+			//   .then(() => {
+			//     ls.remove('token')
+			//     this.RESET_STATE()
+			//     resetRouter()
+			//   })
+		},
 
-  return { token, roles, username, login, getInfo, changeRoles, logout, resetToken }
+		/**
+		 * 清除 Token
+		 */
+		resetToken() {
+			return new Promise(resolve => {
+				ls.remove('token')
+				this.RESET_STATE()
+				resolve(null)
+			})
+		}
+	}
 })
 
-/** 在 setup 外使用 */
-export function useUserStoreHook() {
-  return useUserStore(store)
-}
+export default useUserStore

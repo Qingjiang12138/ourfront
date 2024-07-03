@@ -1,103 +1,91 @@
-/// <reference types="vitest" />
+import { defineConfig, loadEnv, ConfigEnv, UserConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import vueJsx from '@vitejs/plugin-vue-jsx'
+// import eslintPlugin from 'vite-plugin-eslint'
+import { createHtmlPlugin } from 'vite-plugin-html'
+import { createSvgIconsPlugin } from 'vite-plugin-svg-icons'
+import vueSetupExtend from 'unplugin-vue-setup-extend-plus/vite'
+import path from 'path'
+import pkg from './package.json'
+import dayjs from 'dayjs'
+import { wrapperEnv } from './build/getEnv'
 
-import { type ConfigEnv, type UserConfigExport, loadEnv } from "vite"
-import path, { resolve } from "path"
-import vue from "@vitejs/plugin-vue"
-import vueJsx from "@vitejs/plugin-vue-jsx"
-import { createSvgIconsPlugin } from "vite-plugin-svg-icons"
-import svgLoader from "vite-svg-loader"
-import UnoCSS from "unocss/vite"
-
-/** 配置项文档：https://cn.vitejs.dev/config */
-export default ({ mode }: ConfigEnv): UserConfigExport => {
-  const viteEnv = loadEnv(mode, process.cwd()) as ImportMetaEnv
-  const { VITE_PUBLIC_PATH } = viteEnv
-  return {
-    /** 打包时根据实际情况修改 base */
-    base: VITE_PUBLIC_PATH,
-    resolve: {
-      alias: {
-        /** @ 符号指向 src 目录 */
-        "@": resolve(__dirname, "./src")
-      }
-    },
-    server: {
-      /** 设置 host: true 才可以使用 Network 的形式，以 IP 访问项目 */
-      host: true, // host: "0.0.0.0"
-      /** 端口号 */
-      port: 3333,
-      /** 是否自动打开浏览器 */
-      open: false,
-      /** 跨域设置允许 */
-      cors: true,
-      /** 端口被占用时，是否直接退出 */
-      strictPort: false,
-      /** 接口代理 */
-      proxy: {
-        "/api/v1": {
-          target: "https://mock.mengxuegu.com/mock/63218b5fb4c53348ed2bc212",
-          ws: true,
-          /** 是否允许跨域 */
-          changeOrigin: true
-        }
-      },
-      /** 预热常用文件，提高初始页面加载速度 */
-      warmup: {
-        clientFiles: ["./src/layouts/**/*.vue"]
-      }
-    },
-    build: {
-      /** 单个 chunk 文件的大小超过 2048KB 时发出警告 */
-      chunkSizeWarningLimit: 2048,
-      /** 禁用 gzip 压缩大小报告 */
-      reportCompressedSize: false,
-      /** 打包后静态资源目录 */
-      assetsDir: "static",
-      rollupOptions: {
-        output: {
-          /**
-           * 分块策略
-           * 1. 注意这些包名必须存在，否则打包会报错
-           * 2. 如果你不想自定义 chunk 分割策略，可以直接移除这段配置
-           */
-          manualChunks: {
-            vue: ["vue", "vue-router", "pinia"],
-            element: ["element-plus", "@element-plus/icons-vue"],
-            vxe: ["vxe-table", "vxe-table-plugin-element", "xe-utils"]
-          }
-        }
-      }
-    },
-    /** 混淆器 */
-    esbuild:
-      mode === "development"
-        ? undefined
-        : {
-            /** 打包时移除 console.log */
-            pure: ["console.log"],
-            /** 打包时移除 debugger */
-            drop: ["debugger"],
-            /** 打包时移除所有注释 */
-            legalComments: "none"
-          },
-    /** Vite 插件 */
-    plugins: [
-      vue(),
-      vueJsx(),
-      /** 将 SVG 静态图转化为 Vue 组件 */
-      svgLoader({ defaultImport: "url" }),
-      /** SVG */
-      createSvgIconsPlugin({
-        iconDirs: [path.resolve(process.cwd(), "src/icons/svg")],
-        symbolId: "icon-[dir]-[name]"
-      }),
-      /** UnoCSS */
-      UnoCSS()
-    ],
-    /** Vitest 单元测试配置：https://cn.vitest.dev/config */
-    test: {
-      include: ["tests/**/*.test.ts"],
-      environment: "jsdom"
-    }
-  }
+const { dependencies, devDependencies, name, version } = pkg
+const __APP_INFO__ = {
+	pkg: { dependencies, devDependencies, name, version },
+	lastBuildTime: dayjs().format('YYYY-MM-DD HH:mm:ss')
 }
+
+// https://vitejs.dev/config/
+export default defineConfig(({ mode /*command,*/ }: ConfigEnv): UserConfig => {
+	// if (command === 'serve') {
+	//   return {
+	//     // serve 独有配置
+	//   }
+	// } else {
+	//   return {
+	//     // build 独有配置
+	//   }
+	// }
+	const process_cwd = process.cwd()
+	// 获取 .env 环境配置文件
+	const env = loadEnv(mode, process_cwd)
+	const viteEnv = wrapperEnv(env)
+
+	return {
+		base: viteEnv.VITE_PUBLIC_PATH,
+		resolve: {
+			// Vite路径别名配置
+			alias: {
+				'@': path.resolve(__dirname, './src'),
+				'vue-i18n': 'vue-i18n/dist/vue-i18n.cjs.js'
+			},
+			extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.vue', '.json'] // 默认 ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json']
+		},
+		define: {
+			__APP_INFO__: JSON.stringify(__APP_INFO__)
+		},
+		css: {
+			devSourcemap: true,
+			preprocessorOptions: {
+				scss: {
+					additionalData: `@import "@/styles/variables.scss";`
+				}
+			}
+		},
+		server: {
+			host: '0.0.0.0',
+			port: viteEnv.VITE_PORT,
+			open: viteEnv.VITE_OPEN,
+			cors: true,
+			// Load proxy configuration from .env.development
+			proxy: {}
+		},
+		plugins: [
+			// vue支持
+			vue(),
+			// JSX支持
+			vueJsx({
+				// 默认支持  .[jt]sx  .vue 和 .js 需要支持 jsx 写法 需要 配置
+				include: /\.[jt]sx$/ // |\.vue$
+			}),
+			// // esLint 报错信息显示在浏览器界面上
+			// eslintPlugin(),
+			// name 可以写在 script 标签上
+			vueSetupExtend({}),
+			// 注入变量到 html 文件
+			createHtmlPlugin({
+				inject: {
+					data: { title: viteEnv.VITE_APP_TITLE }
+				}
+			}),
+			// 使用 svg 图标
+			createSvgIconsPlugin({
+				// 指定需要缓存的图标文件夹
+				iconDirs: [path.resolve(process.cwd(), 'src/assets/icons')],
+				// 指定symbolId格式
+				symbolId: 'icon-[dir]-[name]'
+			})
+		]
+	}
+})

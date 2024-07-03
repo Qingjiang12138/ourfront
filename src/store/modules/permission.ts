@@ -1,56 +1,74 @@
-import { ref } from "vue"
-import store from "@/store"
-import { defineStore } from "pinia"
-import { type RouteRecordRaw } from "vue-router"
-import { constantRoutes, dynamicRoutes } from "@/router"
-import { flatMultiLevelRoutes } from "@/router/helper"
-import routeSettings from "@/config/route"
+import { PermissionState } from '@/types'
+import { AppRouteRecordRaw } from '@/router/types'
+// import { RouteRecordRaw } from 'vue-router'
+import { defineStore } from 'pinia'
+import { constantRoutes, noFoundRouters } from '@/router'
+import { listRoutes } from '@/api/system/menu'
 
-const hasPermission = (roles: string[], route: RouteRecordRaw) => {
-  const routeRoles = route.meta?.roles
-  return routeRoles ? roles.some((role) => routeRoles.includes(role)) : true
+const modules = import.meta.glob('@/views/**/**.vue')
+export const Layout = () => import('@/layout/index.vue')
+
+const hasPermission = (roles: string[], route: AppRouteRecordRaw) => {
+	if (route.meta && route.meta.roles) {
+		if (roles.includes('ROOT')) {
+			return true
+		}
+		return roles.some(role => {
+			if (route.meta?.roles !== undefined) {
+				return (route.meta.roles as string[]).includes(role)
+			}
+		})
+	}
+	return false
 }
 
-const filterDynamicRoutes = (routes: RouteRecordRaw[], roles: string[]) => {
-  const res: RouteRecordRaw[] = []
-  routes.forEach((route) => {
-    const tempRoute = { ...route }
-    if (hasPermission(roles, tempRoute)) {
-      if (tempRoute.children) {
-        tempRoute.children = filterDynamicRoutes(tempRoute.children, roles)
-      }
-      res.push(tempRoute)
-    }
-  })
-  return res
+export const filterAsyncRoutes = (routes: AppRouteRecordRaw[], roles: string[]) => {
+	const res: AppRouteRecordRaw[] = []
+	routes.forEach(route => {
+		const tmp = { ...route } as any
+		// if (hasPermission(roles, tmp)) {
+		// todo be delete
+		// }
+		// 特殊Layout 配置 标识
+		if (tmp.component == 'Layout') {
+			tmp.component = Layout
+		} else {
+			const component = modules[`/src/views/${tmp.component}.vue`] as any
+			if (component) {
+				tmp.component = component
+			} else {
+				tmp.component = modules[`/src/views/error-page/404.vue`]
+			}
+		}
+		res.push(tmp)
+
+		// 递归
+		if (tmp.children) {
+			tmp.children = filterAsyncRoutes(tmp.children, roles)
+		}
+	})
+	return res
 }
 
-export const usePermissionStore = defineStore("permission", () => {
-  /** 可访问的路由 */
-  const routes = ref<RouteRecordRaw[]>([])
-  /** 有访问权限的动态路由 */
-  const addRoutes = ref<RouteRecordRaw[]>([])
-
-  /** 根据角色生成可访问的 Routes（可访问的路由 = 常驻路由 + 有访问权限的动态路由） */
-  const setRoutes = (roles: string[]) => {
-    const accessedRoutes = filterDynamicRoutes(dynamicRoutes, roles)
-    _set(accessedRoutes)
-  }
-
-  /** 所有路由 = 所有常驻路由 + 所有动态路由 */
-  const setAllRoutes = () => {
-    _set(dynamicRoutes)
-  }
-
-  const _set = (accessedRoutes: RouteRecordRaw[]) => {
-    routes.value = constantRoutes.concat(accessedRoutes)
-    addRoutes.value = routeSettings.thirdLevelRouteCache ? flatMultiLevelRoutes(accessedRoutes) : accessedRoutes
-  }
-
-  return { routes, addRoutes, setRoutes, setAllRoutes }
+const usePermissionStore = defineStore({
+	id: 'permission',
+	state: (): PermissionState => ({
+		routes: [],
+		addRoutes: []
+	}),
+	actions: {
+		setRoutes(routes: AppRouteRecordRaw[]) {
+			this.addRoutes = routes
+			this.routes = constantRoutes.concat(routes, noFoundRouters)
+		},
+		generateRoutes(roles: string[]) {
+			return listRoutes().then((data: any) => {
+				const accessedRoutes = filterAsyncRoutes(data, roles)
+				this.setRoutes(accessedRoutes)
+				return accessedRoutes
+			})
+		}
+	}
 })
 
-/** 在 setup 外使用 */
-export function usePermissionStoreHook() {
-  return usePermissionStore(store)
-}
+export default usePermissionStore
