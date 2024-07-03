@@ -26,7 +26,7 @@ export const constantRoutes: Array<AppRouteRecordRaw> = [
 	{
 		path: '/404',
 		component: () => import('@/views/error-page/404.vue'),
-		meta: { hidden: true }
+		meta: { hidden: false }
 	},
 	{
 		path: '/401',
@@ -220,4 +220,5 @@ export function resetRouter() {
 	})
 }
 
-export default router
+export default router;
+

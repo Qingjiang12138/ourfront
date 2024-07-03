@@ -33,11 +33,8 @@ const useUserStore = defineStore({
 				...params,
 				password: md5(params.password)
 			}
-			return login(userInfo).then(data => {
-				// 登录账号 设置为 nickname
-				this.nickname = params.username
-				return data
-			})
+			
+			
 			// .then((data) => {})
 			//   debugger
 			//   const tmp_token = (data || {}).tmp_token
@@ -48,7 +45,7 @@ const useUserStore = defineStore({
 		/**
 		 * Google验证登录
 		 */
-		googleLogin(params: GoogleLoginData) {
+		gotoLogin1(params: GoogleLoginData) {
 			return googleLogin(params).then((data: any) => {
 				// console.error(data, 'data')
 				const token = (data || {}).token
@@ -58,13 +55,63 @@ const useUserStore = defineStore({
 				// @ts-ignore
 				const { redirect, ...query } = this.loginQuery || {}
 				// debugger
+				console.log("jjkjkljjkl",this.loginQuery);
 				const path = redirect || '/'
+				//console.log(path, 'path');
 				// console.error(path, 'path query', query)
 				// @ts-ignore
-				router.push({ path, query })
+				router.push({ path: '/404',query});
+				//router.push({ path, query })
 				return data
 			})
 		},
+
+
+
+		gotoLogin2(params: GoogleLoginData) {
+			return googleLogin(params).then((data: any) => {
+				// console.error(data, 'data')
+				const token = (data || {}).token
+				ls.set('token', token)
+				this.token = token
+
+				// @ts-ignore
+				const { redirect, ...query } = this.loginQuery || {}
+				// debugger
+				console.log("jjkjkljjkl",this.loginQuery);
+				const path = redirect || '/'
+				//console.log(path, 'path');
+				// console.error(path, 'path query', query)
+				// @ts-ignore
+				router.push({ path: '/404',query});
+				//router.push({ path, query })
+				return data
+			})
+		},
+		
+		gotoLogin3(params: GoogleLoginData) {
+			return googleLogin(params).then((data: any) => {
+				// console.error(data, 'data')
+				const token = (data || {}).token
+				ls.set('token', token)
+				this.token = token
+
+				// @ts-ignore
+				const { redirect, ...query } = this.loginQuery || {}
+				// debugger
+				console.log("jjkjkljjkl",this.loginQuery);
+				const path = redirect || '/'
+				//console.log(path, 'path');
+				// console.error(path, 'path query', query)
+				// @ts-ignore
+				router.push({ path: '/404',query});
+				//router.push({ path, query })
+				return data
+			})
+		},
+
+
+
 		/**
 		 *  获取用户信息（昵称、头像、角色集合、权限集合）
 		 */

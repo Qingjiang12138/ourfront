@@ -55,12 +55,18 @@
 					</div>
 				</div>
 			</el-form-item>-->
-
+			<el-radio-group v-model="radio" class = "selectbox" @change="clickchange"> 
+				<el-radio :label="3">企业端</el-radio>
+				<el-radio :label="6">政务端</el-radio>
+				<el-radio :label="9">载体端</el-radio>
+			</el-radio-group>
 			<el-button size="default" :loading="loading" type="primary" style="width: 100%; margin-bottom: 30px" @click.prevent="handleLogin"
 				>{{ $t('login.login') }}
 			</el-button>
+			
 		</el-form>
 		<GoogleVerifyDialog v-if="dialogOpts.dialogVisible" v-bind="dialogOpts" v-model:dialogVisible="dialogOpts.dialogVisible" />
+		
 	</div>
 </template>
 
@@ -79,6 +85,7 @@ import useStore from '@/store'
 // import { getGeetConfig } from '@/api/login'
 import { useRoute } from 'vue-router'
 import { LoginFormData } from '@/types'
+import * as path from 'path-browserify'
 
 const { user } = useStore()
 const route = useRoute()
@@ -106,7 +113,8 @@ const state = reactive({
 	loading: false,
 	passwordType: 'password',
 	otherQuery: {},
-	clientHeight: document.documentElement.clientHeight
+	clientHeight: document.documentElement.clientHeight,
+	radio:3
 })
 let captcha_obj: any = null
 
@@ -141,11 +149,24 @@ function handleLogin() {
 					// seccode
 				} as LoginFormData)
 				.then((formData: any) => {
-					user.googleLogin()
-					// state.dialogOpts = {
-					// 	formData,
-					// 	dialogVisible: true
-					// }
+					//user.gotoLogin1()
+					if(state.radio===3)
+					{
+						console.log("666666");
+						user.gotoLogin1();
+						
+					}
+				else if(state.radio===6)
+					{
+						
+						console.log("5456464546545456")
+						user.gotoLogin2();
+					}			
+				else if(state.radio===9){
+					
+						console.log("788787878787878787878")
+						user.gotoLogin3()
+				}
 				})
 				.catch(() => {
 					// 重置验证
@@ -158,6 +179,11 @@ function handleLogin() {
 	})
 	// }
 }
+function clickchange(value: number) {
+	state.radio = value
+
+}
+
 
 watch(
 	route,
@@ -387,7 +413,9 @@ $light_gray: #eee;
 			background-color: #f3f3f3;
 		}
 	}
-
+	.selectbox{
+		
+	}
 	.loading {
 		margin: auto;
 		width: 70px;
